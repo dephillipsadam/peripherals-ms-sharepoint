@@ -1,4 +1,4 @@
-package com.kineticdata.filehub.adapters.sharepoint;
+package com.fidessa.filehub.adapters.sharepoint;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -42,18 +42,24 @@ public class SharepointFilestoreAdapter implements FilestoreAdapter {
     private static final Logger LOGGER = LoggerFactory.getLogger(SharepointFilestoreAdapter.class);
 
     /** Defines the adapter display name. */
-    public static final String NAME = "Microsoft Sharepoint";
+    public static final String NAME = "Microsoft Sharepoint (Azure)";
+    
+    /**
+     * Defines the adapter build date
+     */
+    private static final String BUILD_DATE = "Nov 29, 2021 11:00 EST";
     
     /** Defines the collection of property names for the adapter. */
     public static class Properties {
-        public static final String SHAREPOINT_SITE = "Sharepoint Site Location";
         public static final String USERNAME = "Username";
         public static final String PASSWORD = "Password";
         public static final String FOLDER_PATH = "Relative Folder Path";
+        public static final String SHAREPOINT_SITE = "Sharepoint Site Location";
     }
     
     /** Adapter version constant. */
     public static String VERSION;
+    
     /** Load the properties version from the version.properties file. */
     static {
         try (
@@ -77,14 +83,14 @@ public class SharepointFilestoreAdapter implements FilestoreAdapter {
      * application prepares the new Filestore display.
      */
     private final ConfigurablePropertyMap properties = new ConfigurablePropertyMap(
-        new ConfigurableProperty(Properties.SHAREPOINT_SITE)
-            .setIsRequired(true)
-            .setDescription("The URL path to the SharePoint site (ie. https://sharepoint.kineticdata.com/sites/subsite)"),
         new ConfigurableProperty(Properties.USERNAME)
             .setIsRequired(true),
         new ConfigurableProperty(Properties.PASSWORD)
             .setIsRequired(true)
             .setIsSensitive(true),
+        new ConfigurableProperty(Properties.SHAREPOINT_SITE)
+            .setIsRequired(true)
+            .setDescription("The URL path to the SharePoint site (ie. https://sharepoint.kineticdata.com/sites/subsite)"),
         new ConfigurableProperty(Properties.FOLDER_PATH)
             .setIsRequired(true)
             .setDescription("Server Relative Url for a SharePoint Document folder (ie. /Shared Documents/Filehub)")
@@ -105,8 +111,10 @@ public class SharepointFilestoreAdapter implements FilestoreAdapter {
      */
     @Override
     public void initialize(Map<String, String> propertyValues) {
+        
         // Set the configurable properties
         properties.setValues(propertyValues);
+        
         credsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(
             properties.getValue(Properties.USERNAME),properties.getValue(Properties.PASSWORD)
         ));
@@ -141,8 +149,10 @@ public class SharepointFilestoreAdapter implements FilestoreAdapter {
 
     @Override
     public void deleteDocument(String path) {
+        
         // Calculate the folder location
         String folderLocation = properties.getValue(Properties.FOLDER_PATH)+"/"+path;
+        
         // Make the call to Sharepoint
         HttpClient client = buildAuthenticatedHttpClient();
         String formDigestValue = retrieveFormDigestValue();
@@ -166,8 +176,10 @@ public class SharepointFilestoreAdapter implements FilestoreAdapter {
 
     @Override
     public SharepointDocument getDocument(String path) {
+        
         // Calculate the file location
         String fileLocation = properties.getValue(Properties.FOLDER_PATH)+"/"+path;
+        
         // Get Document will always be a file (because clicking on a folder calls getDocuments again)
         HttpClient client = buildAuthenticatedHttpClient();
         HttpGet getDetails = new HttpGet(buildFileUrl(fileLocation));
@@ -175,6 +187,7 @@ public class SharepointFilestoreAdapter implements FilestoreAdapter {
         
         JSONObject details;
         InputStream content;
+        
         try {
             HttpResponse detailsResp = client.execute(getDetails);
             HttpResponse contentResp = client.execute(getContent);
@@ -193,6 +206,7 @@ public class SharepointFilestoreAdapter implements FilestoreAdapter {
             
             byte[] buffer = new byte[8 * 1024];
             int bytesRead;
+            
             while ((bytesRead = tempInputStream.read(buffer)) != -1) {
                 outStream.write(buffer, 0, bytesRead);
             }
@@ -364,10 +378,12 @@ public class SharepointFilestoreAdapter implements FilestoreAdapter {
     }
 
     private String retrieveFormDigestValue() {
+        
         // Attempt to upload the file to the folder using the built URL
         HttpClient client = buildAuthenticatedHttpClient();
         HttpPost post = new HttpPost(properties.getValue(Properties.SHAREPOINT_SITE.replaceAll("/\\z",""))
             +"/_api/contextinfo");
+        
         String formDigestValue = "";
         try {
             HttpResponse response = client.execute(post);
@@ -383,8 +399,10 @@ public class SharepointFilestoreAdapter implements FilestoreAdapter {
     }
 
     private String buildFolderUrl(String relativeFolderPath) {
+        
         // Build the URL to a folder given a relative path
         StringBuilder url;
+        
         try {
             url = new StringBuilder();
             url.append(properties.getValue(Properties.SHAREPOINT_SITE.replaceAll("/\\z","")));
@@ -399,8 +417,10 @@ public class SharepointFilestoreAdapter implements FilestoreAdapter {
     }
 
     private String buildFileUrl(String relativeFilePath) {
+        
         // Build the URL to a folder given a relative path
         StringBuilder url;
+        
         try {
             url = new StringBuilder();
             url.append(properties.getValue(Properties.SHAREPOINT_SITE.replaceAll("/\\z","")));

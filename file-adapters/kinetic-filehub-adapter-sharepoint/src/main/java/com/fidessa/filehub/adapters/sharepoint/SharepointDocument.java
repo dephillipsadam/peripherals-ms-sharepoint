@@ -1,4 +1,4 @@
-package com.kineticdata.filehub.adapters.sharepoint;
+package com.fidessa.filehub.adapters.sharepoint;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
